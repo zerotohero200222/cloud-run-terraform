@@ -1,0 +1,33 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate with GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.0
+
+      - name: Initialize Terraform
+        run: terraform init
+
+      - name: Apply Terraform
+        run: terraform apply -auto-approve \
+          -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
+          -var="region=us-central1" \
+          -var="service_name=my-cloudrun-service" \
+          -var="environment=dev"
