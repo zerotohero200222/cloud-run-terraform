@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
+      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Authenticate with Google Cloud using the service account key
+      # Step 2: Authenticate with Google Cloud
       - name: Authenticate with GCP
         uses: google-github-actions/auth@v2
         with:
@@ -30,20 +30,10 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      # Step 5: Terraform Plan (Optional but recommended for preview)
+      # Step 5: Terraform Plan (Preview)
       - name: Terraform Plan
-        run: |
-          terraform plan \
-            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
-            -var="region=us-central1" \
-            -var="service_name=my-cloudrun-service" \
-            -var="environment=dev"
+        run: terraform plan -var-file="environments/dev.tfvars"
 
       # Step 6: Terraform Apply (Deploy)
       - name: Terraform Apply
-        run: |
-          terraform apply -auto-approve \
-            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
-            -var="region=us-central1" \
-            -var="service_name=my-cloudrun-service" \
-            -var="environment=dev"
+        run: terraform apply -auto-approve -var-file="environments/dev.tfvars"
