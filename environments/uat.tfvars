@@ -1,5 +1,5 @@
 project_id    = "hip-ether-466911-g0"
 region        = "us-central1"
 service_name  = "my-cloudrun-service-uat"
-environment   = "uat"
+environment   = "test"
 image         = "gcr.io/hip-ether-466911-g0/my-app:uat"
