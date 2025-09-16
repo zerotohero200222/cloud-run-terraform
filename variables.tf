@@ -6,6 +6,7 @@ variable "project_id" {
 variable "region" {
   description = "GCP Region for Cloud Run"
   type        = string
+  default     = "us-central1"
 }
 
 variable "service_name" {
@@ -21,4 +22,5 @@ variable "environment" {
 variable "image" {
   description = "Container image to deploy"
   type        = string
+  default     = "gcr.io/cloudrun/hello"
 }
