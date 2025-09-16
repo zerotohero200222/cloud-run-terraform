@@ -4,36 +4,46 @@ on:
   push:
     branches:
       - main
+      - uat
+      - prod
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Authenticate with Google Cloud
       - name: Authenticate with GCP
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      # Step 3: Install Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.5.0
 
-      # Step 4: Initialize Terraform
       - name: Terraform Init
         run: terraform init
 
-      # Step 5: Terraform Plan (Preview)
-      - name: Terraform Plan
-        run: terraform plan -var-file="environments/dev.tfvars"
+      - name: Select Environment
+        id: envselect
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            echo "tfvars=environments/dev.tfvars" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF_NAME}" == "uat" ]]; then
+            echo "tfvars=environments/uat.tfvars" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF_NAME}" == "prod" ]]; then
+            echo "tfvars=environments/prod.tfvars" >> $GITHUB_OUTPUT
+          else
+            echo "Branch not mapped to environment"
+            exit 1
+          fi
 
-      # Step 6: Terraform Apply (Deploy)
+      - name: Terraform Plan
+        run: terraform plan -var-file=${{ steps.envselect.outputs.tfvars }}
+
       - name: Terraform Apply
-        run: terraform apply -auto-approve -var-file="environments/dev.tfvars"
+        run: terraform apply -auto-approve -var-file=${{ steps.envselect.outputs.tfvars }}
