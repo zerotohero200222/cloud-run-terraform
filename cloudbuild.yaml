@@ -1,0 +1,30 @@
+steps:
+  # Step 1: Install Terraform
+  - name: hashicorp/terraform:1.5.0
+    id: Terraform Init
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        terraform init
+
+  # Step 2: Terraform Plan (just for visibility in logs)
+  - name: hashicorp/terraform:1.5.0
+    id: Terraform Plan
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        terraform plan -var-file=environments/${_ENV}.tfvars
+
+  # Step 3: Terraform Apply (deploy)
+  - name: hashicorp/terraform:1.5.0
+    id: Terraform Apply
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        terraform apply -auto-approve -var-file=environments/${_ENV}.tfvars
+
+substitutions:
+  _ENV: dev   # default environment, can be overridden in trigger
