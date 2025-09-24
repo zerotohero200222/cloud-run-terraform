@@ -28,3 +28,7 @@ steps:
 
 substitutions:
   _ENV: dev   # default environment, can be overridden in trigger
+
+# Use default logging (Cloud Logging + regional GCS bucket managed by Cloud Build)
+options:
+  logging: CLOUD_LOGGING_ONLY
