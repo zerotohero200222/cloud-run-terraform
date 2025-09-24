@@ -1,5 +1,5 @@
 steps:
-  # Step 1: Install Terraform
+  # Step 1: Terraform Init
   - name: hashicorp/terraform:1.5.0
     id: Terraform Init
     entrypoint: sh
@@ -8,7 +8,7 @@ steps:
       - |
         terraform init
 
-  # Step 2: Terraform Plan (just for visibility in logs)
+  # Step 2: Terraform Plan (for visibility in logs)
   - name: hashicorp/terraform:1.5.0
     id: Terraform Plan
     entrypoint: sh
@@ -27,8 +27,8 @@ steps:
         terraform apply -auto-approve -var-file=environments/${_ENV}.tfvars
 
 substitutions:
-  _ENV: dev   # default environment, can be overridden in trigger
+  _ENV: dev   # default environment, can be overridden in the trigger
 
-# Use default logging (Cloud Logging + regional GCS bucket managed by Cloud Build)
+# Use default logging (Cloud Logging only, no bucket)
 options:
   logging: CLOUD_LOGGING_ONLY
