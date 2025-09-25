@@ -1,5 +1,52 @@
 # cloud-run-terraform
 Architecture
+Developer (local)
+  |
+  |  git push (update environments/*.tfvars)
+  v
+GitHub Repo: zerotohero200222/cloud-run-terraform
+  |
+  |  (Cloud Build GitHub App / Developer Connect)
+  v
+Cloud Build Trigger: cloud-run-terraform-trigger (region: us-east1)
+  |
+  |  runs cloudbuild.yaml (substitution _ENV)
+  v
+Cloud Build (build execution)
+  |-- Uses service account: cloudbuild-terraform-sa
+  |-- Steps:
+  |     1) terraform init
+  |     2) terraform plan -var-file=environments/${_ENV}.tfvars
+  |     3) terraform apply -auto-approve -var-file=environments/${_ENV}.tfvars
+  |
+  |  Terraform (stateless in container OR optionally remote backend)
+  v
+GCP Resources (deployed by Terraform)
+  |
+  |-- google_cloud_run_service (image: gcr.io/cloudrun/hello)
+  |     - service name = var.service_name (my-cloudrun-service-dev/uat/prod)
+  |     - env var: ENVIRONMENT = ${_ENV}
+  |-- google_cloud_run_service_iam_member (invoker -> allUsers) -> public URL
+  |
+  v
+Cloud Run Service (public endpoint)
+  |
+  |  Runtime service account (can be default or dedicated)
+  v
+Users / clients -> hits Cloud Run public URL
+
+Observability & logs:
+  - Cloud Build write logs -> Cloud Logging (or to GCS bucket via Log Sink)
+  - If configured: Logging Sink: Cloud Logging -> GCS bucket (cloudbuild-logs)
+  - Optionally: Logging Sink -> Pub/Sub -> downstream consumers (BigQuery, ELK, etc.)
+
+Notes:
+  - Service accounts:
+      * cloudbuild-terraform-sa (executes builds / terraform)
+      * (optional) cloudrun-exec-sa (Cloud Run runtime)
+  - Trigger substitution _ENV selects dev/uat/prod via environments/*.tfvars
+  - Terraform state (recommended): GCS backend (tfstate bucket) — not used if stateless
+
 
 Flow:
 
@@ -19,22 +66,7 @@ Terraform provisions/updates Cloud Run with the given .tfvars.
 
 Cloud Run service is deployed with correct environment configuration.
 
- Repository Structure
-cloud-run-terraform/
-├── cloudbuild.yaml        # CI/CD pipeline definition for Cloud Build
-├── main.tf                # Terraform resources (Cloud Run + IAM)
-├── variables.tf           # Terraform input variables
-├── provider.tf            # Google provider config
-├── outputs.tf             # Terraform outputs (service name, region, URL)
-├── environments/          # Environment-specific variable files
-│   ├── dev.tfvars
-│   ├── uat.tfvars
-│   └── prod.tfvars
-├── .gitignore             # Ignore Terraform local state and plans
-└── docs/
-    └── architecture.png   # Architecture diagram
-
-Prerequisites
+⚙️ Prerequisites
 
 Enable required APIs in your GCP project:
 
@@ -64,7 +96,7 @@ gcloud projects add-iam-policy-binding PROJECT_ID \
   --member="serviceAccount:cloudbuild-terraform-sa@PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/run.admin"
 
-Setup Cloud Build Trigger
+🚀 Setup Cloud Build Trigger
 
 Open Google Cloud Console → Cloud Build → Triggers.
 
@@ -88,7 +120,7 @@ Service Account: cloudbuild-terraform-sa@PROJECT_ID.iam.gserviceaccount.com
 
 Substitutions: _ENV=dev (default; override in trigger if needed)
 
-Usage
+▶️ Usage
 Deploy to Dev
 # Edit environments/dev.tfvars
 git add environments/dev.tfvars
@@ -108,7 +140,7 @@ Override _ENV=prod in the Cloud Build trigger.
 
 (Optionally enable manual approval for production deployments).
 
- Outputs
+📊 Outputs
 
 After deployment, Terraform prints:
 
@@ -128,7 +160,7 @@ cloud_run_service_name = "my-cloudrun-service-dev"
 cloud_run_region       = "us-central1"
 cloud_run_url          = "https://my-cloudrun-service-dev-abc123.run.app"
 
-Notes
+🔒 Notes
 
 Terraform state should be stored in a remote backend (e.g., GCS bucket) in production setups.
 
@@ -136,4 +168,4 @@ For simplicity, this repo uses local state (not recommended for team environment
 
 Replace gcr.io/cloudrun/hello with your actual container image for real workloads.
 
- With this setup, every push to main automatically deploys Cloud Run services using Terraform through Cloud Build.
+✅ With this setup, every push to main automatically deploys Cloud Run services using Terraform through Cloud Build.
